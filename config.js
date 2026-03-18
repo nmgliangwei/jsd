@@ -3,7 +3,7 @@ export const CONFIG = {
     CONTACT: 'nmgliangwei@gmail.com',
     
     // 文件大小限制 (单位: MB, 0表示不限制)
-    MAX_FILE_SIZE: 20,
+    MAX_FILE_SIZE: 50,
 
     // 允许的文件扩展名 (空数组表示不限制文件类型)
     // ALLOWED_EXTENSIONS: [".js", ".css", ".json", ".txt", ".md", ".xml", ".svg", ".woff", ".woff2",],
