@@ -1,6 +1,7 @@
 # jsDelivr 镜像站
 
 一个简洁高效的 jsDelivr 镜像站，基于 Vercel Edge Functions。
+[点击查看如何使用](https://cdn.1008.site)
 
 ## 特性
 
@@ -9,9 +10,9 @@
 - **简易配置**：集中配置，部署便捷
 
 
-## 开始使用   
+## 自己部署使用   
 
-请[Frok本仓库](https://github.com/rong6/jsd/fork)，编辑[config.js](config.js) (可参考[config.js.example](config.js.example))，然后打开Vercel进行部署。
+请[Frok本仓库](https://github.com/nmgliangwei/jsd/fork)，编辑[config.js](config.js) (可参考[config.js.example](config.js.example))，然后打开Vercel进行部署。
 
 要使用镜像站，请将原始的 jsDelivr 链接如：
 ```
