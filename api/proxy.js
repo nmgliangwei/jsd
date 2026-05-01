@@ -195,6 +195,11 @@ export default async function handler(request) {
     })
     
     if (!response.ok) {
+      // jsDelivr 返回 403/404 时，对 /gh/ 路径回退到 GitHub Raw
+      if ((response.status === 403 || response.status === 404) && /^\/(gh|github)\//.test(url.pathname)) {
+        const fallbackResponse = await fetchFromGitHubRaw(request, url.pathname)
+        if (fallbackResponse) return fallbackResponse
+      }
       return createErrorResponse(`上游服务器错误: ${response.status}`, response.status)
     }
     
@@ -228,6 +233,58 @@ export default async function handler(request) {
   }
 }
 
+// 从 GitHub Raw 获取文件（jsDelivr 回退方案）
+// 路径格式: /gh/owner/repo@branch/path 或 /github/owner/repo@branch/path
+// 转换为: https://raw.githubusercontent.com/owner/repo/branch/path
+async function fetchFromGitHubRaw(request, pathname) {
+  const match = pathname.match(/^\/(?:gh|github)\/([^\/]+)\/([^\/]+)@([^\/]+)\/(.+)/)
+  if (!match) return null
+
+  const [, owner, repo, branch, filePath] = match
+  const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath}`
+
+  try {
+    const proxyHeaders = new Headers([
+      ['user-agent', request.headers.get('user-agent') || 'Mozilla/5.0'],
+    ])
+
+    const response = await fetch(rawUrl, {
+      method: request.method,
+      headers: proxyHeaders,
+    })
+
+    if (!response.ok) return null
+
+    // 检查文件大小限制（与主代理逻辑一致）
+    if (CONFIG.MAX_FILE_SIZE > 0) {
+      const contentLength = response.headers.get('content-length')
+      const maxSize = CONFIG.MAX_FILE_SIZE * 1024 * 1024
+      if (contentLength && parseInt(contentLength) > maxSize) {
+        return null
+      }
+    }
+
+    const responseHeaders = new Headers()
+    const essentialHeaders = ['content-type', 'content-length', 'etag', 'last-modified']
+    essentialHeaders.forEach(header => {
+      const value = response.headers.get(header)
+      if (value) responseHeaders.set(header, value)
+    })
+
+    responseHeaders.set('cache-control', `public, max-age=${CONFIG.CACHE_MAX_AGE}`)
+    responseHeaders.set('access-control-allow-origin', '*')
+    responseHeaders.set('x-content-type-options', 'nosniff')
+    responseHeaders.set('x-gh-fallback', 'true')
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    })
+  } catch (e) {
+    return null
+  }
+}
+
 async function createFastProxy(request, targetUrl) {
   const proxyHeaders = new Headers([
     ['host', 'cdn.jsdelivr.net'],
@@ -248,9 +305,14 @@ async function createFastProxy(request, targetUrl) {
   })
   
   if (!response.ok) {
+    // jsDelivr 返回 403/404 时，对 /gh/ 路径回退到 GitHub Raw
+    if ((response.status === 403 || response.status === 404) && /^\/(gh|github)\//.test(new URL(request.url).pathname)) {
+      const fallbackResponse = await fetchFromGitHubRaw(request, new URL(request.url).pathname)
+      if (fallbackResponse) return fallbackResponse
+    }
     return createErrorResponse(`上游服务器错误: ${response.status}`, response.status)
   }
-  
+
   // 快速响应头处理
   const responseHeaders = new Headers()
   
