@@ -23,8 +23,7 @@ export const CONFIG = {
         blacklist: [
         ],
         // 白名单模式时使用 (支持通配符，如 'my-org/*' 允许该组织下所有仓库)
-        whitelist: [nmgliangwei/*
-        ]
+        whitelist: ['nmgliangwei/*']
     },
 
     // npm 包配置 (格式: 'package-name' 或 '@scope/package', 支持通配符 '@scope/*')
