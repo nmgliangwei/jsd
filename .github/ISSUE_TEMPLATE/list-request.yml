@@ -1,0 +1,58 @@
+name: 名单变更申请
+description: 申请将仓库、npm 包、站点或扩展名加入白名单/黑名单
+labels: ["list-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请填写以下信息，提交后 GitHub Actions 会自动生成配置变更 PR，合并后即生效。
+
+  - type: dropdown
+    id: list-type
+    attributes:
+      label: 名单类型
+      options:
+        - GitHub 仓库白名单
+        - GitHub 仓库黑名单
+        - npm 包白名单
+        - npm 包黑名单
+        - 站点白名单
+        - 站点黑名单
+        - 扩展名白名单
+        - 扩展名黑名单
+    validations:
+      required: true
+
+  - type: textarea
+    id: items
+    attributes:
+      label: 条目
+      description: |
+        每行一个，支持以下格式：
+        - GitHub 仓库：`owner/repo` 或 `owner/*`（通配符，表示该用户/组织下所有仓库）
+        - npm 包：`package-name` 或 `@scope/package` 或 `@scope/*`（通配符）
+        - 站点：`domain.com` 或 `*.domain.com`（通配符，表示所有子域名）
+        - 扩展名：`.js`、`.css` 等（需带点号前缀）
+      placeholder: |
+        nmgliangwei/my-repo
+        nmgliangwei/*
+        @vue/*
+        *.example.com
+        .exe
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: 申请理由
+      description: 简要说明为什么需要加白/加黑
+    validations:
+      required: true
+
+  - type: input
+    id: contact
+    attributes:
+      label: 联系方式（可选）
+      description: 方便有疑问时联系你
+      placeholder: GitHub 用户名 / 邮箱

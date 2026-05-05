@@ -1,0 +1,29 @@
+name: 名单变更审核标记
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label-pending:
+    if: contains(github.event.issue.labels.*.name, 'list-request')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['pending-review']
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '📋 申请已提交，等待管理员审核。审核通过后会自动创建配置变更 PR。'
+            });

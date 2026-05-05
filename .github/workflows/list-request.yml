@@ -1,0 +1,61 @@
+name: 名单变更自动处理
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  process-list-request:
+    if: github.event.label.name == 'approved' && contains(github.event.issue.labels.*.name, 'list-request')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse issue and update config
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+        run: |
+          node scripts/process-list-request.js
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "list: 名单变更 #${{ github.event.issue.number }}"
+          body: |
+            自动生成自 #${{ github.event.issue.number }}
+
+            合并此 PR 即可使名单变更生效。
+          branch: list-request-${{ github.event.issue.number }}
+          commit-message: "chore(config): 名单变更 #${{ github.event.issue.number }}"
+          labels: automated
+
+      - name: Comment on issue
+        if: steps.cpr.outputs.pull-request-number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.cpr.outputs.pull-request-number }};
+            const prUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${prNumber}`;
+            // Remove pending-review label
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: 'pending-review'
+              });
+            } catch (e) {}
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ 审核通过，配置已更新，PR 已自动创建：${prUrl}\n\n合并 PR 后变更即生效。`
+            });
