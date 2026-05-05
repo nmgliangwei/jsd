@@ -18,13 +18,21 @@ jobs:
             const repo = context.repo.repo;
             const issueNumber = context.issue.number;
             const author = context.payload.issue.user.login;
-            const labels = context.payload.issue.labels.map(l => l.name);
+            const body = context.payload.issue.body || '';
 
-            // 只处理名单变更申请（来自 issue template 的标签）
-            if (!labels.includes('list-request')) {
+            // 通过 body 内容识别名单变更申请模板
+            if (!body.includes('名单类型')) {
               console.log('Not a list-request issue, skipping.');
               return;
             }
+
+            // 先补上标签（模板标签可能还未应用）
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels: ['list-request']
+            });
 
             let isCollaborator = false;
             try {

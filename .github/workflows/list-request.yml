@@ -20,8 +20,9 @@ jobs:
           result-encoding: string
           script: |
             const label = context.payload.label.name;
-            const labels = context.payload.issue.labels.map(l => l.name);
-            if (label === 'approved' && labels.includes('list-request')) {
+            const body = context.payload.issue.body || '';
+            // 必须是 approved 标签，且 body 包含名单变更模板关键字
+            if (label === 'approved' && body.includes('名单类型')) {
               return 'yes';
             }
             return 'no';
