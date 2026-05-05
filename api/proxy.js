@@ -50,63 +50,68 @@ function extractNpmPackage(url) {
   return null
 }
 
-// 检查GitHub仓库是否被允许
+// 通配符匹配: owner/* (GitHub), @scope/* (npm), *.domain (站点)
+function matchWithWildcard(item, list) {
+  return list.some(entry => {
+    const itemLower = item.toLowerCase()
+    const entryLower = entry.toLowerCase()
+
+    if (entryLower.endsWith('/*')) {
+      const prefix = entryLower.slice(0, -1)
+      return itemLower.startsWith(prefix)
+    }
+
+    if (entryLower.startsWith('*.')) {
+      const domain = entryLower.slice(1) // '.example.com'
+      return itemLower.endsWith(domain)
+    }
+
+    return itemLower === entryLower
+  })
+}
+
+// 检查GitHub仓库是否被允许 (支持 owner/* 通配)
 function isGitHubRepoAllowed(repo) {
-  if (!repo || CONFIG.LIST_MODE === 'none') return true
-  
-  if (CONFIG.LIST_MODE === 'blacklist') {
-    return !CONFIG.GITHUB_REPOS.blacklist.some(blockedRepo => 
-      repo.toLowerCase() === blockedRepo.toLowerCase()
-    )
-  } else if (CONFIG.LIST_MODE === 'whitelist') {
-    return CONFIG.GITHUB_REPOS.whitelist.some(allowedRepo => 
-      repo.toLowerCase() === allowedRepo.toLowerCase()
-    )
+  if (!repo || CONFIG.GITHUB_REPOS_MODE === 'none') return true
+
+  if (CONFIG.GITHUB_REPOS_MODE === 'blacklist') {
+    return !matchWithWildcard(repo, CONFIG.GITHUB_REPOS.blacklist)
+  } else if (CONFIG.GITHUB_REPOS_MODE === 'whitelist') {
+    return matchWithWildcard(repo, CONFIG.GITHUB_REPOS.whitelist)
   }
-  
+
   return true
 }
 
-// 检查npm包是否被允许
+// 检查npm包是否被允许 (支持 @scope/* 通配)
 function isNpmPackageAllowed(packageName) {
-  if (!packageName || CONFIG.LIST_MODE === 'none') return true
-  
-  if (CONFIG.LIST_MODE === 'blacklist') {
-    return !CONFIG.NPM_PACKAGES.blacklist.some(blockedPkg => 
-      packageName.toLowerCase() === blockedPkg.toLowerCase()
-    )
-  } else if (CONFIG.LIST_MODE === 'whitelist') {
-    return CONFIG.NPM_PACKAGES.whitelist.some(allowedPkg => 
-      packageName.toLowerCase() === allowedPkg.toLowerCase()
-    )
+  if (!packageName || CONFIG.NPM_PACKAGES_MODE === 'none') return true
+
+  if (CONFIG.NPM_PACKAGES_MODE === 'blacklist') {
+    return !matchWithWildcard(packageName, CONFIG.NPM_PACKAGES.blacklist)
+  } else if (CONFIG.NPM_PACKAGES_MODE === 'whitelist') {
+    return matchWithWildcard(packageName, CONFIG.NPM_PACKAGES.whitelist)
   }
-  
+
   return true
 }
 
-// 检查referer是否被允许
+// 检查referer是否被允许 (支持 *.domain 通配)
 function isRefererAllowed(referer) {
-  if (!referer || CONFIG.LIST_MODE === 'none') return true
-  
+  if (!referer || CONFIG.SITES_MODE === 'none') return true
+
   try {
     const refererHost = new URL(referer).hostname.toLowerCase()
-    
-    if (CONFIG.LIST_MODE === 'blacklist') {
-      return !CONFIG.SITES.blacklist.some(blockedSite => 
-        refererHost.includes(blockedSite.toLowerCase()) ||
-        blockedSite.toLowerCase().includes(refererHost)
-      )
-    } else if (CONFIG.LIST_MODE === 'whitelist') {
-      return CONFIG.SITES.whitelist.some(allowedSite => 
-        refererHost.includes(allowedSite.toLowerCase()) ||
-        allowedSite.toLowerCase().includes(refererHost)
-      )
+
+    if (CONFIG.SITES_MODE === 'blacklist') {
+      return !matchWithWildcard(refererHost, CONFIG.SITES.blacklist)
+    } else if (CONFIG.SITES_MODE === 'whitelist') {
+      return matchWithWildcard(refererHost, CONFIG.SITES.whitelist)
     }
   } catch (e) {
-    // referer URL解析失败，允许通过
     return true
   }
-  
+
   return true
 }
 
@@ -135,9 +140,11 @@ export default async function handler(request) {
     const targetPath = url.pathname + url.search
     const targetUrl = `https://cdn.jsdelivr.net${targetPath}`
     
-    // 如果配置为无限制模式，跳过大部分检查
-    if (CONFIG.LIST_MODE === 'none' && 
-        CONFIG.ALLOWED_EXTENSIONS.length === 0 && 
+    // 如果所有类别都为无限制模式，跳过大部分检查
+    if (CONFIG.GITHUB_REPOS_MODE === 'none' &&
+        CONFIG.NPM_PACKAGES_MODE === 'none' &&
+        CONFIG.SITES_MODE === 'none' &&
+        CONFIG.ALLOWED_EXTENSIONS.length === 0 &&
         CONFIG.MAX_FILE_SIZE === 0) {
       return createFastProxy(request, targetUrl)
     }

@@ -32,6 +32,93 @@
 
     <link rel="stylesheet" href="https://cdn.1008.site/gh/nmgliangwei/jsd@main/css/normalize.css" type="text/css">
     <link rel="stylesheet" href="https://cdn.1008.site/gh/nmgliangwei/jsd@main/css/cayman.css" type="text/css">
+    <style>
+        .limit-search {
+            width: 100%;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #dce6f0;
+            border-radius: 0.3rem;
+            outline: none;
+            margin-bottom: 1.5rem;
+            font-family: inherit;
+            color: #606c71;
+            background-color: #fff;
+        }
+        .limit-search:focus {
+            border-color: #159957;
+            box-shadow: 0 0 0 2px rgba(21,153,87,0.15);
+        }
+        .limit-card {
+            border: 1px solid #dce6f0;
+            border-radius: 0.3rem;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .limit-card h3 {
+            margin: 0 0 0.6rem 0;
+            font-size: 1rem;
+            color: #159957;
+        }
+        .limit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .limit-table td {
+            padding: 0.35rem 0.6rem;
+            border: 1px solid #e9ebec;
+            font-size: 0.9rem;
+        }
+        .limit-table td:first-child {
+            font-weight: bold;
+            color: #567482;
+            white-space: nowrap;
+            width: 30%;
+        }
+        .limit-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .limit-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.85rem;
+            border-radius: 0.25rem;
+            background-color: #f3f6fa;
+            color: #567482;
+            border: 1px solid #dce6f0;
+            font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+        .limit-badge-wildcard {
+            background-color: #fff8e1;
+            color: #b8860b;
+            border-color: #f0d060;
+        }
+        .limit-badge-empty {
+            color: #999;
+            font-style: italic;
+            font-family: inherit;
+            background: none;
+            border: none;
+        }
+        .limit-badge-mode {
+            font-family: inherit;
+            font-size: 0.8rem;
+            vertical-align: middle;
+            margin-left: 0.4rem;
+        }
+        .limit-badge-blacklist {
+            background-color: #fde8e8;
+            color: #c0392b;
+            border-color: #f5c6c6;
+        }
+        .limit-badge-whitelist {
+            background-color: #e8f8e8;
+            color: #27ae60;
+            border-color: #c6f5c6;
+        }
+    </style>
 </head>
 
 <body>
@@ -76,17 +163,138 @@
                             class="octicon octicon-link"></span></a>使用规则
                 </h1>
 
-                <p>为保证服务长远，也为了你我不被请喝茶，请遵守以下规则：</p>
+                <p>为保证服务长远，请遵守以下规则：</p>
 
                 <ul class="task-list">
                     <li><b>本站不保证长期可用，建议<a href="#self-deployment">自行部署</a>。</b></li>
                     <li>请勿加速<b>不符合中国大陆及美国等地区法律法规的文件</b>，包括但不限于淫秽色情、血腥暴力、涉政内容。</li>
-                    <li><b>单个文件最大为 100MB</b>，超过限制的文件将无法访问。</li>
-                    <li><b>所有文件缓存时间为 24 小时</b>，以提升访问速度。</li>
+                    <li>本站采用黑白名单模式，具体请参考下方"访问控制"。</li>
+                    <li>如要加白或加黑请在本项目 issue 中提交申请，<a href="https://github.com/nmgliangwei/jsd/issues" target="_blank" rel="noopener">加白申请</a>。</li>
                 </ul>
 
                 <h1>
-                
+                    <a id="access-control" class="anchor" href="#access-control" aria-hidden="true"><span
+                            class="octicon octicon-link"></span></a>访问控制
+                </h1>
+
+                <p>以下是本站当前的访问控制配置，数据实时从服务端读取。</p>
+
+                <input type="text" id="limit-search" class="limit-search" placeholder="搜索仓库、包名、站点..." autocomplete="off">
+
+                <div id="limit-status">加载中...</div>
+
+                <script>
+                (function() {
+                    var searchInput = document.getElementById('limit-search');
+                    var container = document.getElementById('limit-status');
+
+                    function formatSize(mb) {
+                        return mb > 0 ? mb + ' MB' : '无限制';
+                    }
+
+                    function formatTime(seconds) {
+                        if (seconds <= 0) return '不缓存';
+                        if (seconds < 60) return seconds + ' 秒';
+                        if (seconds < 3600) return Math.floor(seconds / 60) + ' 分钟';
+                        return Math.floor(seconds / 3600) + ' 小时';
+                    }
+
+                    function modeLabel(mode) {
+                        if (mode === 'blacklist') return '黑名单模式';
+                        if (mode === 'whitelist') return '白名单模式';
+                        return '不限制';
+                    }
+
+                    function modeTag(mode) {
+                        if (mode === 'blacklist') return '<span class="limit-badge limit-badge-mode limit-badge-blacklist">黑名单</span>';
+                        if (mode === 'whitelist') return '<span class="limit-badge limit-badge-mode limit-badge-whitelist">白名单</span>';
+                        return '<span class="limit-badge limit-badge-empty">不限制</span>';
+                    }
+
+                    function renderBadges(items, type) {
+                        if (!items || items.length === 0) return '<span class="limit-badge limit-badge-empty">未配置</span>';
+                        return items.map(function(item) {
+                            var isWildcard = (type === 'github' && item.endsWith('/*')) ||
+                                            (type === 'npm' && item.endsWith('/*')) ||
+                                            (type === 'site' && item.startsWith('*.'));
+                            var cls = isWildcard ? 'limit-badge limit-badge-wildcard' : 'limit-badge';
+                            return '<span class="' + cls + '">' + escapeHtml(item) + '</span>';
+                        }).join('');
+                    }
+
+                    function escapeHtml(text) {
+                        var d = document.createElement('div');
+                        d.textContent = text;
+                        return d.innerHTML;
+                    }
+
+                    function renderListSection(data, key, modeKey, label, type) {
+                        var mode = data[modeKey] || 'none';
+                        var blacklist = data[key].blacklist || [];
+                        var whitelist = data[key].whitelist || [];
+                        var searchStr = label + ' ' + blacklist.join(' ') + ' ' + whitelist.join(' ');
+                        var html = '<div class="limit-card" data-search="' + escapeHtml(searchStr) + '">';
+                        html += '<h3>' + label + ' ' + modeTag(mode) + '</h3>';
+                        html += '<table class="limit-table"><tbody>';
+                        html += '<tr><td>黑名单</td><td><div class="limit-badges">' + renderBadges(blacklist, type) + '</div></td></tr>';
+                        html += '<tr><td>白名单</td><td><div class="limit-badges">' + renderBadges(whitelist, type) + '</div></td></tr>';
+                        html += '</tbody></table>';
+                        html += '</div>';
+                        return html;
+                    }
+
+                    function renderConfig(data) {
+                        var html = '';
+
+                        // 基本配置
+                        html += '<div class="limit-card" data-search="基本配置 文件大小 扩展名 缓存">';
+                        html += '<h3>基本配置</h3>';
+                        html += '<table class="limit-table"><tbody>';
+                        html += '<tr><td>文件大小限制</td><td>' + formatSize(data.maxFileSize) + '</td></tr>';
+                        html += '<tr><td>文件扩展名限制</td><td>' + (data.allowedExtensions && data.allowedExtensions.length > 0 ? data.allowedExtensions.map(function(e) { return '<code>' + escapeHtml(e) + '</code>'; }).join(' ') : '不限制') + '</td></tr>';
+                        html += '<tr><td>缓存时间</td><td>' + formatTime(data.cacheMaxAge) + '</td></tr>';
+                        html += '</tbody></table>';
+                        html += '</div>';
+
+                        // GitHub 仓库
+                        html += renderListSection(data, 'githubRepos', 'githubReposMode', 'GitHub 仓库配置', 'github');
+
+                        // npm 包
+                        html += renderListSection(data, 'npmPackages', 'npmPackagesMode', 'npm 包配置', 'npm');
+
+                        // 站点
+                        html += renderListSection(data, 'sites', 'sitesMode', '站点访问控制', 'site');
+
+                        container.innerHTML = html;
+                    }
+
+                    function filterCards(keyword) {
+                        var cards = container.querySelectorAll('.limit-card');
+                        var kw = keyword.trim().toLowerCase();
+                        for (var i = 0; i < cards.length; i++) {
+                            if (!kw) {
+                                cards[i].style.display = '';
+                                continue;
+                            }
+                            var text = (cards[i].getAttribute('data-search') || '').toLowerCase();
+                            cards[i].style.display = text.indexOf(kw) !== -1 ? '' : 'none';
+                        }
+                    }
+
+                    searchInput.addEventListener('input', function() {
+                        filterCards(this.value);
+                    });
+
+                    fetch('/api/config')
+                        .then(function(r) { return r.json(); })
+                        .then(renderConfig)
+                        .catch(function() {
+                            container.innerHTML = '<p style="color:#e74c3c;">加载配置失败，请刷新页面重试。</p>';
+                        });
+                })();
+                </script>
+
+                <h1>
                     <a id="self-deployment" class="anchor" href="#self-deployment" aria-hidden="true"><span
                             class="octicon octicon-link"></span></a>自部署
                 </h1>
