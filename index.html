@@ -236,8 +236,14 @@
                         var html = '<div class="limit-card" data-search="' + escapeHtml(searchStr) + '">';
                         html += '<h3>' + label + ' ' + modeTag(mode) + '</h3>';
                         html += '<table class="limit-table"><tbody>';
-                        html += '<tr><td>黑名单</td><td><div class="limit-badges">' + renderBadges(blacklist, type) + '</div></td></tr>';
-                        html += '<tr><td>白名单</td><td><div class="limit-badges">' + renderBadges(whitelist, type) + '</div></td></tr>';
+                        if (mode === 'blacklist') {
+                            html += '<tr><td>黑名单</td><td><div class="limit-badges">' + renderBadges(blacklist, type) + '</div></td></tr>';
+                        } else if (mode === 'whitelist') {
+                            html += '<tr><td>白名单</td><td><div class="limit-badges">' + renderBadges(whitelist, type) + '</div></td></tr>';
+                        } else {
+                            html += '<tr><td>黑名单</td><td><div class="limit-badges">' + renderBadges(blacklist, type) + '</div></td></tr>';
+                            html += '<tr><td>白名单</td><td><div class="limit-badges">' + renderBadges(whitelist, type) + '</div></td></tr>';
+                        }
                         html += '</tbody></table>';
                         html += '</div>';
                         return html;
@@ -247,12 +253,29 @@
                         var html = '';
 
                         // 基本配置
-                        html += '<div class="limit-card" data-search="基本配置 文件大小 扩展名 缓存">';
+                        html += '<div class="limit-card" data-search="基本配置 文件大小 缓存">';
                         html += '<h3>基本配置</h3>';
                         html += '<table class="limit-table"><tbody>';
                         html += '<tr><td>文件大小限制</td><td>' + formatSize(data.maxFileSize) + '</td></tr>';
-                        html += '<tr><td>文件扩展名限制</td><td>' + (data.allowedExtensions && data.allowedExtensions.length > 0 ? data.allowedExtensions.map(function(e) { return '<code>' + escapeHtml(e) + '</code>'; }).join(' ') : '不限制') + '</td></tr>';
                         html += '<tr><td>缓存时间</td><td>' + formatTime(data.cacheMaxAge) + '</td></tr>';
+                        html += '</tbody></table>';
+                        html += '</div>';
+
+                        // 文件扩展名
+                        var extMode = data.extensionsMode || 'none';
+                        var extWl = data.extensionsWhitelist || [];
+                        var extBl = data.extensionsBlacklist || [];
+                        html += '<div class="limit-card" data-search="文件扩展名 ' + extWl.join(' ') + ' ' + extBl.join(' ') + '">';
+                        html += '<h3>文件扩展名 ' + modeTag(extMode) + '</h3>';
+                        html += '<table class="limit-table"><tbody>';
+                        if (extMode === 'whitelist') {
+                            html += '<tr><td>允许的扩展名</td><td><div class="limit-badges">' + renderBadges(extWl, 'ext') + '</div></td></tr>';
+                        } else if (extMode === 'blacklist') {
+                            html += '<tr><td>禁止的扩展名</td><td><div class="limit-badges">' + renderBadges(extBl, 'ext') + '</div></td></tr>';
+                        } else {
+                            html += '<tr><td>允许的扩展名</td><td><div class="limit-badges">' + renderBadges(extWl, 'ext') + '</div></td></tr>';
+                            html += '<tr><td>禁止的扩展名</td><td><div class="limit-badges">' + renderBadges(extBl, 'ext') + '</div></td></tr>';
+                        }
                         html += '</tbody></table>';
                         html += '</div>';
 

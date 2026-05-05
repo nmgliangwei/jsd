@@ -6,20 +6,23 @@ export const config = {
 
 // 检查文件扩展名是否被允许
 function isAllowedFileType(url) {
-  // 如果允许列表为空，则不限制文件类型
-  if (!CONFIG.ALLOWED_EXTENSIONS || CONFIG.ALLOWED_EXTENSIONS.length === 0) {
-    return true
-  }
-  
+  if (CONFIG.EXTENSIONS_MODE === 'none') return true
+
   const pathname = new URL(url).pathname
   const extension = pathname.substring(pathname.lastIndexOf('.')).toLowerCase()
-  
+
   // 如果没有扩展名，允许通过（可能是目录或API请求）
-  if (!extension || extension === pathname) {
-    return true
+  if (!extension || extension === pathname) return true
+
+  if (CONFIG.EXTENSIONS_MODE === 'whitelist') {
+    return CONFIG.EXTENSIONS_WHITELIST.includes(extension)
   }
-  
-  return CONFIG.ALLOWED_EXTENSIONS.includes(extension)
+
+  if (CONFIG.EXTENSIONS_MODE === 'blacklist') {
+    return !CONFIG.EXTENSIONS_BLACKLIST.includes(extension)
+  }
+
+  return true
 }
 
 // 从URL中提取GitHub仓库信息
@@ -144,14 +147,17 @@ export default async function handler(request) {
     if (CONFIG.GITHUB_REPOS_MODE === 'none' &&
         CONFIG.NPM_PACKAGES_MODE === 'none' &&
         CONFIG.SITES_MODE === 'none' &&
-        CONFIG.ALLOWED_EXTENSIONS.length === 0 &&
+        CONFIG.EXTENSIONS_MODE === 'none' &&
         CONFIG.MAX_FILE_SIZE === 0) {
       return createFastProxy(request, targetUrl)
     }
     
     // 检查文件类型
     if (!isAllowedFileType(targetUrl)) {
-      return createErrorResponse('文件类型不被允许，支持类型：' + CONFIG.ALLOWED_EXTENSIONS.join(', '), 415)
+      if (CONFIG.EXTENSIONS_MODE === 'whitelist') {
+        return createErrorResponse('文件类型不被允许，允许类型：' + CONFIG.EXTENSIONS_WHITELIST.join(', '), 415)
+      }
+      return createErrorResponse('文件类型被禁止，禁止类型：' + CONFIG.EXTENSIONS_BLACKLIST.join(', '), 415)
     }
     
     // 检查GitHub仓库

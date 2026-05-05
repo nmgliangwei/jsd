@@ -5,8 +5,13 @@ export const CONFIG = {
     // 文件大小限制 (单位: MB, 0表示不限制)
     MAX_FILE_SIZE: 5,
 
-    // 允许的文件扩展名 (空数组表示不限制文件类型)
-    ALLOWED_EXTENSIONS: [".js", ".css", ".json", ".txt", ".md", ".xml", ".svg", ".woff", ".woff2",],
+    // 文件扩展名模式: 'blacklist' | 'whitelist' | 'none'
+    // blacklist: 禁止指定扩展名, whitelist: 只允许指定扩展名, none: 不限制
+    EXTENSIONS_MODE: 'whitelist',
+
+    // 文件扩展名列表
+    EXTENSIONS_WHITELIST: [".js", ".css", ".json", ".txt", ".md", ".xml", ".svg", ".woff", ".woff2",],
+    EXTENSIONS_BLACKLIST: [],
 
     // 缓存设置
     CACHE_MAX_AGE: 24 * 60 * 60, // 24小时 (单位：秒)
