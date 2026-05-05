@@ -23,7 +23,7 @@ export const CONFIG = {
         blacklist: [
         ],
         // 白名单模式时使用 (支持通配符，如 'my-org/*' 允许该组织下所有仓库)
-        whitelist: [
+        whitelist: [nmgliangwei/*
         ]
     },
 
@@ -33,7 +33,7 @@ export const CONFIG = {
         blacklist: [
         ],
         // 白名单模式时使用 (支持通配符，如 '@my-org/*' 允许该作用域下所有包)
-        whitelist: [nmgliangwei/*
+        whitelist: [
         ]
     },
 
