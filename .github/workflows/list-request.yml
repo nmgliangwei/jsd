@@ -1,11 +1,85 @@
-name: 名单变更自动处理
+name: 名单变更处理
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, labeled]
 
 jobs:
-  process-list-request:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    outputs:
+      should_process: ${{ steps.decide.outputs.should_process }}
+    steps:
+      - uses: actions/github-script@v7
+        id: decide
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = context.issue.number;
+            const author = context.payload.issue.user.login;
+            const body = context.payload.issue.body || '';
+            const action = context.payload.action;
+            const label = context.payload.label ? context.payload.label.name : '';
+
+            // 只处理名单变更申请
+            if (!body.includes('名单类型')) {
+              core.setOutput('should_process', 'false');
+              console.log('Not a list-request issue, skipping.');
+              return;
+            }
+
+            // opened 事件：判断是否项目成员
+            if (action === 'opened') {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: issueNumber, labels: ['list-request']
+              });
+
+              let isCollaborator = false;
+              try {
+                const { status } = await github.rest.repos.checkCollaborator({
+                  owner, repo, username: author
+                });
+                isCollaborator = status === 204;
+              } catch (e) {
+                isCollaborator = false;
+              }
+
+              if (isCollaborator) {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: issueNumber, labels: ['approved']
+                });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issueNumber,
+                  body: '✅ 项目成员提交，自动审核通过。'
+                });
+                core.setOutput('should_process', 'true');
+              } else {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: issueNumber, labels: ['pending-review']
+                });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issueNumber,
+                  body: '📋 申请已提交，等待管理员审核。审核通过后会自动创建配置变更 PR。'
+                });
+                core.setOutput('should_process', 'false');
+              }
+              return;
+            }
+
+            // labeled 事件：只有 approved 标签才处理
+            if (action === 'labeled' && label === 'approved') {
+              core.setOutput('should_process', 'true');
+              return;
+            }
+
+            core.setOutput('should_process', 'false');
+
+  process:
+    needs: check
+    if: needs.check.outputs.should_process == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -13,25 +87,9 @@ jobs:
       issues: write
 
     steps:
-      - name: Check trigger
-        id: check
-        uses: actions/github-script@v7
-        with:
-          result-encoding: string
-          script: |
-            const label = context.payload.label.name;
-            const body = context.payload.issue.body || '';
-            // 必须是 approved 标签，且 body 包含名单变更模板关键字
-            if (label === 'approved' && body.includes('名单类型')) {
-              return 'yes';
-            }
-            return 'no';
-
       - uses: actions/checkout@v4
-        if: steps.check.outputs.result == 'yes'
 
       - name: Parse issue and update config
-        if: steps.check.outputs.result == 'yes'
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -40,7 +98,6 @@ jobs:
           node scripts/process-list-request.js
 
       - name: Create Pull Request
-        if: steps.check.outputs.result == 'yes'
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
@@ -54,7 +111,7 @@ jobs:
           labels: automated
 
       - name: Comment on issue
-        if: steps.check.outputs.result == 'yes' && steps.cpr.outputs.pull-request-number
+        if: steps.cpr.outputs.pull-request-number
         uses: actions/github-script@v7
         with:
           script: |
