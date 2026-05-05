@@ -7,12 +7,12 @@ export const CONFIG = {
 
     // 文件扩展名模式: 'blacklist' | 'whitelist' | 'none'
     // blacklist: 禁止指定扩展名, whitelist: 只允许指定扩展名, none: 不限制
-    EXTENSIONS_MODE: 'none',
+    EXTENSIONS_MODE: 'blacklist',
 
     // 文件扩展名列表
     // EXTENSIONS_WHITELIST: [".js", ".css", ".json", ".txt", ".md", ".xml", ".svg", ".woff", ".woff2",],
     EXTENSIONS_WHITELIST: [],
-    EXTENSIONS_BLACKLIST: [],
+    EXTENSIONS_BLACKLIST: [".exe"],
 
     // 缓存设置
     CACHE_MAX_AGE: 24 * 60 * 60, // 24小时 (单位：秒)
