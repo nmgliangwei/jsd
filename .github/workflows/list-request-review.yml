@@ -5,7 +5,7 @@ on:
     types: [opened]
 
 jobs:
-  label-pending:
+  label-review:
     if: contains(github.event.issue.labels.*.name, 'list-request')
     runs-on: ubuntu-latest
     permissions:
@@ -15,15 +15,47 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: ['pending-review']
-            });
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '📋 申请已提交，等待管理员审核。审核通过后会自动创建配置变更 PR。'
-            });
+            const owner = context.repo.owner;
+            const author = context.payload.issue.user.login;
+            let isCollaborator = false;
+
+            try {
+              const { status } = await github.rest.repos.checkCollaborator({
+                owner,
+                repo: context.repo.repo,
+                username: author
+              });
+              isCollaborator = status === 204;
+            } catch (e) {
+              isCollaborator = false;
+            }
+
+            if (isCollaborator) {
+              // 项目成员自动通过
+              await github.rest.issues.addLabels({
+                owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['approved']
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '✅ 项目成员提交，自动审核通过。'
+              });
+            } else {
+              // 外部提交者需要审核
+              await github.rest.issues.addLabels({
+                owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['pending-review']
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '📋 申请已提交，等待管理员审核。审核通过后会自动创建配置变更 PR。'
+              });
+            }
