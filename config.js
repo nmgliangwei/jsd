@@ -29,6 +29,7 @@ export const CONFIG = {
         ],
         // 白名单模式时使用 (支持通配符，如 'my-org/*' 允许该组织下所有仓库)
         whitelist: [
+            '4ft35t/cdn',
             'lionsoul2014/ip2region',
             'nmgliangwei/*'
         ]
