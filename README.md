@@ -3,6 +3,10 @@
 一个简洁高效的 jsDelivr 镜像站，基于 Vercel Edge Functions。
 [点击查看如何使用](https://cdn.1008.site)
 
+本站开通了黑白名单模式，请通过issue提交黑白名单申请。
+
+查询黑名名单列表和更多限制请访问，[https://cdn.1008.site](https://cdn.1008.site)
+
 ## 特性
 
 - **安全防护**：支持设置仓库、站点黑白名单、文件类型和大小限制
