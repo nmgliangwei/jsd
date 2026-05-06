@@ -40,6 +40,7 @@ export const CONFIG = {
             'sgl-project/*',
             'starrocks/*',
             'tencent/*',
+            'typecho/*',
             'vllm-project/*'
         ]
     },
