@@ -525,6 +525,15 @@
                             return null;
                         }
 
+                        // GitHub Releases 下载URL转换
+                        function convertGitHubReleasesUrl(url) {
+                            var match = url.match(/https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/releases\/download\/([^\/]+)\/(.+)/);
+                            if (match) {
+                                return 'https://' + currentHost + '/gh-release/' + match[1] + '/' + match[2] + '/' + match[3] + '/' + match[4];
+                            }
+                            return null;
+                        }
+
                         // npm URL转换
                         function convertNpmUrl(url) {
                             // npmjs.com package page
@@ -575,6 +584,8 @@
                                 result = convertGitHubRawUrl(inputUrl);
                             } else if (inputUrl.includes('github.com') && inputUrl.includes('/blob/')) {
                                 result = convertGitHubUrl(inputUrl);
+                            } else if (inputUrl.includes('github.com') && inputUrl.includes('/releases/download/')) {
+                                result = convertGitHubReleasesUrl(inputUrl);
                             } else if (inputUrl.includes('npmjs.com') || inputUrl.includes('registry.npmjs.org')) {
                                 result = convertNpmUrl(inputUrl);
                             } else if (inputUrl.includes('unpkg.com')) {

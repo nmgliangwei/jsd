@@ -133,12 +133,17 @@ function createErrorResponse(message, status = 403) {
 export default async function handler(request) {
   try {
     const url = new URL(request.url)
-    
+
     // 处理根路径请求，返回主页
     if (url.pathname === '/') {
       return Response.redirect(new URL('/index.html', request.url), 302)
     }
-    
+
+    // GitHub Releases 下载路径，直接代理到 GitHub
+    if (/^\/gh-release\//.test(url.pathname)) {
+      return fetchFromGitHubRelease(request, url.pathname)
+    }
+
     // 构建目标URL
     const targetPath = url.pathname + url.search
     const targetUrl = `https://cdn.jsdelivr.net${targetPath}`
@@ -351,6 +356,68 @@ async function fetchFromNpmRegistry(request, pathname) {
     })
   } catch (e) {
     return null
+  }
+}
+
+// 从 GitHub Releases 获取文件
+// 路径格式: /gh-release/owner/repo/tag/filename
+// 转换为: https://github.com/owner/repo/releases/download/tag/filename
+async function fetchFromGitHubRelease(request, pathname) {
+  const match = pathname.match(/^\/gh-release\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)/)
+  if (!match) {
+    return createErrorResponse('无效的 GitHub Releases URL', 400)
+  }
+
+  const [, owner, repo, tag, filename] = match
+  const githubUrl = `https://github.com/${owner}/${repo}/releases/download/${tag}/${filename}`
+
+  // 检查仓库是否被允许
+  const repoFullName = `${owner}/${repo}`
+  if (!isGitHubRepoAllowed(repoFullName)) {
+    return createErrorResponse(`库 ${repoFullName} 不被允许访问，请联系 ${CONFIG.CONTACT}`, 403)
+  }
+
+  try {
+    const proxyHeaders = new Headers([
+      ['user-agent', request.headers.get('user-agent') || 'Mozilla/5.0'],
+    ])
+
+    const response = await fetch(githubUrl, {
+      method: request.method,
+      headers: proxyHeaders,
+    })
+
+    if (!response.ok) {
+      return createErrorResponse(`上游服务器错误: ${response.status}`, response.status)
+    }
+
+    if (CONFIG.MAX_FILE_SIZE > 0) {
+      const contentLength = response.headers.get('content-length')
+      const maxSize = CONFIG.MAX_FILE_SIZE * 1024 * 1024
+      if (contentLength && parseInt(contentLength) > maxSize) {
+        return createErrorResponse(`文件过大，超过${CONFIG.MAX_FILE_SIZE}MB限制，请联系 ${CONFIG.CONTACT}`, 413)
+      }
+    }
+
+    const responseHeaders = new Headers()
+    const essentialHeaders = ['content-type', 'content-length', 'etag', 'last-modified', 'content-disposition']
+    essentialHeaders.forEach(header => {
+      const value = response.headers.get(header)
+      if (value) responseHeaders.set(header, value)
+    })
+
+    responseHeaders.set('cache-control', `public, max-age=${CONFIG.CACHE_MAX_AGE}`)
+    responseHeaders.set('access-control-allow-origin', '*')
+    responseHeaders.set('x-content-type-options', 'nosniff')
+    responseHeaders.set('x-github-release', 'true')
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    })
+  } catch (e) {
+    console.error('GitHub Release proxy error:', e)
+    return createErrorResponse('代理服务器错误', 500)
   }
 }
 
