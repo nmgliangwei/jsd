@@ -118,6 +118,141 @@
             color: #27ae60;
             border-color: #c6f5c6;
         }
+        /* URL转换器样式 */
+        .url-converter {
+            background: #f8f9fa;
+            border: 1px solid #dce6f0;
+            border-radius: 0.3rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .url-converter h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.2rem;
+            color: #159957;
+        }
+        .converter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        .converter-input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .converter-input {
+            flex: 1;
+            min-width: 280px;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            border: 1px solid #dce6f0;
+            border-radius: 0.3rem;
+            outline: none;
+            font-family: inherit;
+            color: #606c71;
+        }
+        .converter-input:focus {
+            border-color: #159957;
+            box-shadow: 0 0 0 2px rgba(21,153,87,0.15);
+        }
+        .converter-btn {
+            padding: 0.6rem 1.5rem;
+            font-size: 1rem;
+            background-color: #159957;
+            color: #fff;
+            border: none;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background-color 0.2s;
+        }
+        .converter-btn:hover {
+            background-color: #128759;
+        }
+        .converter-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid #e9ebec;
+            border-radius: 0.3rem;
+            display: none;
+        }
+        .converter-result.show {
+            display: block;
+        }
+        .converter-result-label {
+            font-size: 0.85rem;
+            color: #567482;
+            margin-bottom: 0.5rem;
+        }
+        .converter-result-url {
+            font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.95rem;
+            color: #159957;
+            word-break: break-all;
+            background: #f3f6fa;
+            padding: 0.8rem;
+            border-radius: 0.25rem;
+            border: 1px solid #dce6f0;
+        }
+        .converter-result-actions {
+            margin-top: 0.8rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .converter-copy-btn {
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            background-color: #159957;
+            color: #fff;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background-color 0.2s;
+        }
+        .converter-copy-btn:hover {
+            background-color: #128759;
+        }
+        .converter-copy-btn.copied {
+            background-color: #27ae60;
+        }
+        .converter-error {
+            color: #c0392b;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .converter-error.show {
+            display: block;
+        }
+        .converter-help {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #567482;
+        }
+        .converter-help details {
+            margin-top: 0.5rem;
+        }
+        .converter-help summary {
+            cursor: pointer;
+            color: #159957;
+            font-weight: bold;
+        }
+        .converter-help ul {
+            margin: 0.5rem 0 0 1.5rem;
+            padding: 0;
+        }
+        .converter-help li {
+            margin: 0.3rem 0;
+        }
+        .converter-help code {
+            background: #f3f6fa;
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.2rem;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 
@@ -141,6 +276,45 @@
                 <p>这是一个对中国大陆地区较为友好的jsDelivr（一个对开源项目静态文件的加速CDN）镜像站，它的网址是<a href="https://cdn.1008.site">https://cdn.1008.site</a>。</p>
                 <!-- <p><b>⚠由于流量过大，本人无力承受，请<a href="#self-deployment">自行部署</a>以获得最佳使用效果。</b></p> -->
                 <p style="font-weight: bold; color: #e74c3c;">本站特别支持了github 大文件下载，"突破了jsDelivr的很多限制"，但为了更好的用户体验，通过本加速域名下载 github文件最大支持 100 MB。</p>
+
+                <h1>
+                    <a id="url-converter" class="anchor" href="#url-converter" aria-hidden="true"><span
+                            class="octicon octicon-link"></span></a>URL转换器
+                </h1>
+
+                <p>输入原始URL，自动转换成本站地址。</p>
+
+                <div class="url-converter">
+                    <div class="converter-form">
+                        <div class="converter-input-group">
+                            <input type="text" id="converter-input" class="converter-input"
+                                   placeholder="输入原始URL，如：https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"
+                                   autocomplete="off">
+                            <button type="button" id="converter-btn" class="converter-btn">转换</button>
+                        </div>
+                        <div id="converter-error" class="converter-error"></div>
+                        <div id="converter-result" class="converter-result">
+                            <div class="converter-result-label">转换后的链接：</div>
+                            <div id="converter-result-url" class="converter-result-url"></div>
+                            <div class="converter-result-actions">
+                                <button type="button" id="converter-copy-btn" class="converter-copy-btn">复制链接</button>
+                                <button type="button" id="converter-open-btn" class="converter-copy-btn">打开链接</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="converter-help">
+                        <details>
+                            <summary>支持的URL格式</summary>
+                            <ul>
+                                <li><strong>jsDelivr:</strong> <code>https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js</code></li>
+                                <li><strong>GitHub Raw:</strong> <code>https://raw.githubusercontent.com/user/repo/main/file.js</code></li>
+                                <li><strong>GitHub.com:</strong> <code>https://github.com/user/repo/blob/main/file.js</code></li>
+                                <li><strong>npm:</strong> <code>https://www.npmjs.com/package/jquery</code> 或 <code>https://registry.npmjs.org/jquery/-/jquery-3.6.4.tgz</code></li>
+                                <li><strong>unpkg:</strong> <code>https://unpkg.com/jquery@3.6.4/dist/jquery.min.js</code></li>
+                            </ul>
+                        </details>
+                    </div>
+                </div>
 
                 <h1>
                     <a id="how-to-use" class="anchor" href="#how-to-use" aria-hidden="true"><span
@@ -314,6 +488,151 @@
                         .catch(function() {
                             container.innerHTML = '<p style="color:#e74c3c;">加载配置失败，请刷新页面重试。</p>';
                         });
+
+                    // URL转换器逻辑
+                    (function() {
+                        var converterInput = document.getElementById('converter-input');
+                        var converterBtn = document.getElementById('converter-btn');
+                        var converterResult = document.getElementById('converter-result');
+                        var converterResultUrl = document.getElementById('converter-result-url');
+                        var converterCopyBtn = document.getElementById('converter-copy-btn');
+                        var converterOpenBtn = document.getElementById('converter-open-btn');
+                        var converterError = document.getElementById('converter-error');
+
+                        // 获取当前域名
+                        var currentHost = window.location.host;
+
+                        // jsDelivr URL转换
+                        function convertJsdellivrUrl(url) {
+                            return url.replace(/https?:\/\/cdn\.jsdelivr\.net/, 'https://' + currentHost);
+                        }
+
+                        // GitHub Raw URL转换
+                        function convertGitHubRawUrl(url) {
+                            var match = url.match(/https?:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)/);
+                            if (match) {
+                                return 'https://' + currentHost + '/gh/' + match[1] + '/' + match[2] + '@' + match[3] + '/' + match[4];
+                            }
+                            return null;
+                        }
+
+                        // GitHub.com URL转换
+                        function convertGitHubUrl(url) {
+                            var match = url.match(/https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)/);
+                            if (match) {
+                                return 'https://' + currentHost + '/gh/' + match[1] + '/' + match[2] + '@' + match[3] + '/' + match[4];
+                            }
+                            return null;
+                        }
+
+                        // npm URL转换
+                        function convertNpmUrl(url) {
+                            // npmjs.com package page
+                            var match = url.match(/https?:\/\/(?:www\.)?npmjs\.com\/package\/(@?[^\/]+)(?:\/v\/([^\/\?]+))?/);
+                            if (match) {
+                                var packageName = match[1];
+                                var version = match[2] ? '@' + match[2] : '';
+                                return 'https://' + currentHost + '/npm/' + packageName + version;
+                            }
+
+                            // npm registry URL
+                            var regMatch = url.match(/https?:\/\/registry\.npmjs\.org\/(@?[^\/]+)(?:\/([^\/\?]+))?/);
+                            if (regMatch) {
+                                var pkg = regMatch[1];
+                                var ver = regMatch[2] ? '@' + regMatch[2] : '';
+                                return 'https://' + currentHost + '/npm/' + pkg + ver;
+                            }
+
+                            return null;
+                        }
+
+                        // unpkg URL转换
+                        function convertUnpkgUrl(url) {
+                            var match = url.match(/https?:\/\/unpkg\.com\/(@?[^\/]+)(?:\/([^\/\?]+))?/);
+                            if (match) {
+                                var packageName = match[1];
+                                var filePath = match[2] || 'package.json';
+                                return 'https://' + currentHost + '/npm/' + packageName + '/' + filePath;
+                            }
+                            return null;
+                        }
+
+                        // 主转换函数
+                        function convertUrl(inputUrl) {
+                            inputUrl = inputUrl.trim();
+
+                            // 如果已经是本站链接
+                            if (inputUrl.includes(currentHost)) {
+                                return { success: true, url: inputUrl, message: '该URL已经是镜像站链接' };
+                            }
+
+                            // 尝试各种转换
+                            var result = null;
+
+                            if (inputUrl.includes('cdn.jsdelivr.net')) {
+                                result = convertJsdellivrUrl(inputUrl);
+                            } else if (inputUrl.includes('raw.githubusercontent.com')) {
+                                result = convertGitHubRawUrl(inputUrl);
+                            } else if (inputUrl.includes('github.com') && inputUrl.includes('/blob/')) {
+                                result = convertGitHubUrl(inputUrl);
+                            } else if (inputUrl.includes('npmjs.com') || inputUrl.includes('registry.npmjs.org')) {
+                                result = convertNpmUrl(inputUrl);
+                            } else if (inputUrl.includes('unpkg.com')) {
+                                result = convertUnpkgUrl(inputUrl);
+                            }
+
+                            if (result) {
+                                return { success: true, url: result };
+                            }
+
+                            return { success: false, error: '不支持的URL格式，请输入jsDelivr、GitHub、npm、unpkg等支持的URL' };
+                        }
+
+                        function showResult(data) {
+                            converterError.classList.remove('show');
+                            converterResult.classList.remove('show');
+
+                            if (data.error) {
+                                converterError.textContent = data.error;
+                                converterError.classList.add('show');
+                                return;
+                            }
+
+                            converterResultUrl.textContent = data.url + (data.message ? ' (' + data.message + ')' : '');
+                            converterResult.classList.add('show');
+                        }
+
+                        function doConvert() {
+                            var url = converterInput.value;
+                            if (!url) {
+                                showResult({ error: '请输入URL' });
+                                return;
+                            }
+                            var result = convertUrl(url);
+                            showResult(result);
+                        }
+
+                        converterBtn.addEventListener('click', doConvert);
+                        converterInput.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter') doConvert();
+                        });
+
+                        converterCopyBtn.addEventListener('click', function() {
+                            navigator.clipboard.writeText(converterResultUrl.textContent).then(function() {
+                                converterCopyBtn.textContent = '已复制!';
+                                converterCopyBtn.classList.add('copied');
+                                setTimeout(function() {
+                                    converterCopyBtn.textContent = '复制链接';
+                                    converterCopyBtn.classList.remove('copied');
+                                }, 2000);
+                            });
+                        });
+
+                        converterOpenBtn.addEventListener('click', function() {
+                            var url = converterResultUrl.textContent.split(' (')[0];
+                            window.open(url, '_blank');
+                        });
+                    })();
                 })();
                 </script>
 
