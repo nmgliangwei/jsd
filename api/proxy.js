@@ -213,6 +213,11 @@ export default async function handler(request) {
         const fallbackResponse = await fetchFromGitHubRaw(request, url.pathname)
         if (fallbackResponse) return fallbackResponse
       }
+      // jsDelivr 返回 404 时，对 /npm/ 路径回退到 npm registry
+      if (response.status === 404 && /^\/npm\//.test(url.pathname)) {
+        const fallbackResponse = await fetchFromNpmRegistry(request, url.pathname)
+        if (fallbackResponse) return fallbackResponse
+      }
       return createErrorResponse(`上游服务器错误: ${response.status}`, response.status)
     }
     
@@ -298,6 +303,57 @@ async function fetchFromGitHubRaw(request, pathname) {
   }
 }
 
+// 从 npm registry 获取 tarball（jsDelivr 回退方案）
+// 路径格式: /npm/jquery/-/jquery-3.6.4.tgz
+// 转换为: https://registry.npmjs.org/jquery/-/jquery-3.6.4.tgz
+async function fetchFromNpmRegistry(request, pathname) {
+  const match = pathname.match(/^\/npm\/((?:@[^\/]+\/)?[^\/]+)(\/.*)/)
+  if (!match) return null
+
+  const [, packageName, tarballPath] = match
+  const npmUrl = `https://registry.npmjs.org/${packageName}${tarballPath}`
+
+  try {
+    const proxyHeaders = new Headers([
+      ['user-agent', request.headers.get('user-agent') || 'Mozilla/5.0'],
+    ])
+
+    const response = await fetch(npmUrl, {
+      method: request.method,
+      headers: proxyHeaders,
+    })
+
+    if (!response.ok) return null
+
+    if (CONFIG.MAX_FILE_SIZE > 0) {
+      const contentLength = response.headers.get('content-length')
+      const maxSize = CONFIG.MAX_FILE_SIZE * 1024 * 1024
+      if (contentLength && parseInt(contentLength) > maxSize) {
+        return null
+      }
+    }
+
+    const responseHeaders = new Headers()
+    const essentialHeaders = ['content-type', 'content-length', 'etag', 'last-modified']
+    essentialHeaders.forEach(header => {
+      const value = response.headers.get(header)
+      if (value) responseHeaders.set(header, value)
+    })
+
+    responseHeaders.set('cache-control', `public, max-age=${CONFIG.CACHE_MAX_AGE}`)
+    responseHeaders.set('access-control-allow-origin', '*')
+    responseHeaders.set('x-content-type-options', 'nosniff')
+    responseHeaders.set('x-npm-fallback', 'true')
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    })
+  } catch (e) {
+    return null
+  }
+}
+
 async function createFastProxy(request, targetUrl) {
   const proxyHeaders = new Headers([
     ['host', 'cdn.jsdelivr.net'],
@@ -321,6 +377,11 @@ async function createFastProxy(request, targetUrl) {
     // jsDelivr 返回 403/404 时，对 /gh/ 路径回退到 GitHub Raw
     if ((response.status === 403 || response.status === 404) && /^\/(gh|github)\//.test(new URL(request.url).pathname)) {
       const fallbackResponse = await fetchFromGitHubRaw(request, new URL(request.url).pathname)
+      if (fallbackResponse) return fallbackResponse
+    }
+    // jsDelivr 返回 404 时，对 /npm/ 路径回退到 npm registry
+    if (response.status === 404 && /^\/npm\//.test(new URL(request.url).pathname)) {
+      const fallbackResponse = await fetchFromNpmRegistry(request, new URL(request.url).pathname)
       if (fallbackResponse) return fallbackResponse
     }
     return createErrorResponse(`上游服务器错误: ${response.status}`, response.status)

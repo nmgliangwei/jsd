@@ -536,11 +536,11 @@
                             }
 
                             // npm registry URL
-                            var regMatch = url.match(/https?:\/\/registry\.npmjs\.org\/((?:@[^\/]+\/)?[^\/]+)(\/(-?\/.*))?/);
+                            var regMatch = url.match(/https?:\/\/registry\.npmjs\.org\/((?:@[^\/]+\/)?[^\/]+)(\/.*)?/);
                             if (regMatch) {
                                 var pkg = regMatch[1];
-                                var tarballPath = regMatch[2]; // e.g. -/jquery-3.6.4.tgz or just -
-                                return 'https://' + currentHost + '/npm/' + pkg + tarballPath;
+                                var filePath = regMatch[2];
+                                return 'https://' + currentHost + '/npm/' + pkg + (filePath || '');
                             }
 
                             return null;
