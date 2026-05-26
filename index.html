@@ -528,7 +528,7 @@
                         // npm URL转换
                         function convertNpmUrl(url) {
                             // npmjs.com package page
-                            var match = url.match(/https?:\/\/(?:www\.)?npmjs\.com\/package\/(@?[^\/]+)(?:\/v\/([^\/\?]+))?/);
+                            var match = url.match(/https?:\/\/(?:www\.)?npmjs\.com\/package\/((?:@[^\/]+\/)?[^\/]+)(?:\/v\/([^\/\?]+))?/);
                             if (match) {
                                 var packageName = match[1];
                                 var version = match[2] ? '@' + match[2] : '';
@@ -536,11 +536,11 @@
                             }
 
                             // npm registry URL
-                            var regMatch = url.match(/https?:\/\/registry\.npmjs\.org\/(@?[^\/]+)(?:\/([^\/\?]+))?/);
+                            var regMatch = url.match(/https?:\/\/registry\.npmjs\.org\/((?:@[^\/]+\/)?[^\/]+)(\/(-?\/.*))?/);
                             if (regMatch) {
                                 var pkg = regMatch[1];
-                                var ver = regMatch[2] ? '@' + regMatch[2] : '';
-                                return 'https://' + currentHost + '/npm/' + pkg + ver;
+                                var tarballPath = regMatch[2]; // e.g. -/jquery-3.6.4.tgz or just -
+                                return 'https://' + currentHost + '/npm/' + pkg + tarballPath;
                             }
 
                             return null;
@@ -548,10 +548,10 @@
 
                         // unpkg URL转换
                         function convertUnpkgUrl(url) {
-                            var match = url.match(/https?:\/\/unpkg\.com\/(@?[^\/]+)(?:\/([^\/\?]+))?/);
+                            var match = url.match(/https?:\/\/unpkg\.com\/(@?[^\/]+)\/(.+)/);
                             if (match) {
                                 var packageName = match[1];
-                                var filePath = match[2] || 'package.json';
+                                var filePath = match[2];
                                 return 'https://' + currentHost + '/npm/' + packageName + '/' + filePath;
                             }
                             return null;
