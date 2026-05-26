@@ -33,6 +33,8 @@ export const CONFIG = {
             'alibaba/*',
             'apache/*',
             'google/*',
+            'gpustack/*',
+            'higress-group/*',
             'lance-format/*',
             'lancedb/*',
             'lionsoul2014/ip2region',
