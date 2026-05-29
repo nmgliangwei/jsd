@@ -31,7 +31,7 @@ function extractGitHubRepo(url) {
     const pathname = new URL(url).pathname
     const match = pathname.match(/^\/(gh|github)\/([^\/]+)\/([^\/]+)/)
     if (match) {
-      return `${match[2]}/${match[3]}`
+      return `${match[2]}/${match[3].split('@')[0]}`
     }
   } catch (e) {
     // URL解析失败
