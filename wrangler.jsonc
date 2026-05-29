@@ -1,12 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "jsd",
+  "main": "worker.js",
   "compatibility_date": "2026-05-29",
   "observability": {
     "enabled": true
   },
   "assets": {
-    "directory": "."
+    "directory": ".",
+    "ignore": ["config.js*", "worker.js", "api/", "scripts/", "wrangler.jsonc", "vercel.json", "nginx.conf", "LICENSE", "README.md", ".github", ".idea", ".gitignore"]
   },
   "compatibility_flags": [
     "nodejs_compat"
