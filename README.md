@@ -23,6 +23,7 @@
 - **性能优化**：智能缓存、自动压缩、完整 CORS 支持
 - **GitHub 大文件**：突破 jsDelivr 限制，支持最大 100MB 的 GitHub 文件下载
 - **回退机制**：jsDelivr 不可用时自动回退到 GitHub Raw / npm Registry
+- **防刷保护**：路径验证、上游错误缓存、IP 限流三重防护，避免无效请求打上游被封禁
 - **名单管理**：通过 GitHub Issue 自动处理黑白名单变更申请
 - **简易配置**：集中配置，Fork 即用
 
@@ -78,6 +79,7 @@ wrangler deploy
 > | 配置查询 API (`/api/config`) | ✅ | ❌ |
 > | 来源站点 (Referer) 控制 | ✅ | ❌ |
 > | 动态文件大小限制 | ✅ | ✅ |
+> | 防刷保护 (路径验证/错误缓存/限流) | ✅ | ❌ |
 
 ## 配置说明
 
@@ -91,6 +93,19 @@ wrangler deploy
 | `GITHUB_REPOS_MODE` | GitHub 仓库模式：`blacklist` / `whitelist` / `none` | `blacklist` |
 | `NPM_PACKAGES_MODE` | npm 包模式：`blacklist` / `whitelist` / `none` | `none` |
 | `SITES_MODE` | 站点访问控制：`blacklist` / `whitelist` / `none` | `whitelist` |
+| `ERROR_CACHE_TTL` | 上游 4xx 错误缓存时间 (秒)，0 为不缓存 | `60` |
+| `RATE_LIMIT_WINDOW` | 限流时间窗口 (秒) | `60` |
+| `RATE_LIMIT_MAX_REQUESTS` | 窗口内每 IP 最大请求数，0 为不限制 | `0` |
+
+## 防刷保护
+
+为防止无效请求大量打到上游服务器导致 IP 被封禁，本项目内置三重防护：
+
+| 层级 | 机制 | 说明 |
+|------|------|------|
+| 第1层 | 路径验证 | 拦截隐藏文件（`/.env`、`/.git/`）和攻击探测路径（`/wp-admin`、`/phpmyadmin` 等），直接返回 404 |
+| 第2层 | 错误缓存 | 上游返回 4xx 的路径缓存 `ERROR_CACHE_TTL` 秒，期间重复请求不再打上游；回退成功则不缓存 |
+| 第3层 | IP 限流 | 每个 IP 在 `RATE_LIMIT_WINDOW` 秒内最多 `RATE_LIMIT_MAX_REQUESTS` 次请求，超出返回 429 |
 
 ## 项目结构
 
