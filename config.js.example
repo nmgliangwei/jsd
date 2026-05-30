@@ -59,5 +59,12 @@ export const CONFIG = {
             'allowed-site.com',
             'another-allowed-site.com'
         ]
-    }
+    },
+
+    // 错误缓存: 缓存上游4xx错误响应，避免相同错误路径重复请求上游 (单位: 秒, 0表示不缓存)
+    ERROR_CACHE_TTL: 60,
+
+    // 请求限流: 每个IP在时间窗口内允许的最大请求数 (0表示不限制)
+    RATE_LIMIT_WINDOW: 60,      // 时间窗口 (秒)
+    RATE_LIMIT_MAX_REQUESTS: 0, // 窗口内最大请求数 (0=不限制, 建议值: 120-300)
 }

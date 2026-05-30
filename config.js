@@ -1,7 +1,7 @@
 export const CONFIG = {
     // 联系方式
     CONTACT: 'nmgliangwei@gmail.com',
-    
+
     // 文件大小限制 (单位: MB, 0表示不限制)
     MAX_FILE_SIZE: 100,
 
@@ -66,5 +66,12 @@ export const CONFIG = {
         // 白名单模式时使用 (支持通配符，如 '*.my-site.com' 允许其所有子域名)
         whitelist: [
         ]
-    }
+    },
+
+    // 错误缓存: 缓存上游4xx错误响应，避免相同错误路径重复请求上游 (单位: 秒, 0表示不缓存)
+    ERROR_CACHE_TTL: 86400,
+
+    // 请求限流: 每个IP在时间窗口内允许的最大请求数 (0表示不限制)
+    RATE_LIMIT_WINDOW: 60,      // 时间窗口 (秒)
+    RATE_LIMIT_MAX_REQUESTS: 120, // 窗口内最大请求数 (0=不限制, 建议值: 120-300)
 }
