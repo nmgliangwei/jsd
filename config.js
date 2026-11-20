@@ -40,6 +40,8 @@ export const CONFIG = {
             'lancedb/*',
             'lionsoul2014/ip2region',
             'nmgliangwei/*',
+            'openresty/*',
+            'openssl/*',
             'sgl-project/*',
             'starrocks/*',
             'tencent/*',
